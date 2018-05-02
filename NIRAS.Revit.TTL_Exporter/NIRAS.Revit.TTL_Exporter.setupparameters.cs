@@ -30,12 +30,12 @@ namespace NIRAS.Revit.TTL_Exporter
             Document doc = uidoc.Document;
             Transaction tx = new Transaction(doc);
 
-            
 
-                Parameters.Add_sharedParameters(doc);
-               // Parameters.CopyParameters(doc);
 
-           
+            Parameters.Add_sharedParameters(doc);
+            // Parameters.CopyParameters(doc);
+
+
 
             return Result.Succeeded;
 
@@ -66,8 +66,6 @@ namespace NIRAS.Revit.TTL_Exporter
                 try
                 {
 
-                    
-
                     string s = Host + "/" + ProNum + "/" + e.Category.Name + "/" + Guid.NewGuid().ToString();
                     s = s.Replace(" ", "_");
 
@@ -96,45 +94,54 @@ namespace NIRAS.Revit.TTL_Exporter
             string orgSharedFilePath = doc.Application.SharedParametersFilename;
             doc.Application.SharedParametersFilename = @"C:\Temp\N_Shared_Parameters_GUID_TEST.txt";
             DefinitionFile DefFile = doc.Application.OpenSharedParameterFile();
-            DefinitionGroup grupe = DefFile.Groups.get_Item("URI");
-            Definition Def1 = grupe.Definitions.get_Item("URI");
-            Definition Def2 = grupe.Definitions.get_Item("Host");
+            DefinitionGroup grp = DefFile.Groups.get_Item("URI");
+            Definition Def1 = grp.Definitions.get_Item("URI");
+            Definition Def2 = grp.Definitions.get_Item("Host");
+            Definition Def3 = grp.Definitions.get_Item("SpaceTypeURI");
 
-            // create a category set and insert category of wall to it
-            CategorySet myCategories = doc.Application.Create.NewCategorySet();
+            // create a category set and insert all categories to it
+            CategorySet allCategories = doc.Application.Create.NewCategorySet();
 
             foreach (Category category in doc.Settings.Categories)
             {
                 if (category.AllowsBoundParameters)
                 {
-                    myCategories.Insert(category);
+                    allCategories.Insert(category);
                 }
             }
 
-            // Get the BingdingMap of current document.
-            BindingMap bindingMap = doc.ParameterBindings;
-
-            doc.Application.SharedParametersFilename = orgSharedFilePath;
-
-            Binding binding = doc.Application.Create.NewTypeBinding(myCategories);
-            binding = doc.Application.Create.NewInstanceBinding(myCategories);
+            // Add shared parameter Def1 to all categories
+            Binding binding = doc.Application.Create.NewTypeBinding(allCategories);
+            binding = doc.Application.Create.NewInstanceBinding(allCategories);
 
             BindingMap map = (new UIApplication(doc.Application)).ActiveUIDocument.Document.ParameterBindings;
             map.Insert(Def1, binding, BuiltInParameterGroup.PG_IDENTITY_DATA);
 
+            // Get category "Project Information"
+            CategorySet projInfoCategory = doc.Application.Create.NewCategorySet();
+            Category projInfoCat = doc.Settings.Categories.get_Item(BuiltInCategory.OST_ProjectInformation);
+            projInfoCategory.Insert(projInfoCat);
 
-
-            CategorySet myCategories1 = doc.Application.Create.NewCategorySet();
-            Category myCategory = doc.Settings.Categories.get_Item(BuiltInCategory.OST_ProjectInformation);
-            myCategories1.Insert(myCategory);
-
-            Binding binding1 = doc.Application.Create.NewTypeBinding(myCategories1);
-            binding1 = doc.Application.Create.NewInstanceBinding(myCategories1);
+            // Add shared parameter Def2 to project information category
+            Binding binding1 = doc.Application.Create.NewTypeBinding(projInfoCategory);
+            binding1 = doc.Application.Create.NewInstanceBinding(projInfoCategory);
 
             map = (new UIApplication(doc.Application)).ActiveUIDocument.Document.ParameterBindings;
             map.Insert(Def2, binding1, BuiltInParameterGroup.PG_IDENTITY_DATA);
 
+            // Create a category set with rooms and spaces
+            CategorySet spacesCategory = doc.Application.Create.NewCategorySet();
+            Category roomsCat = doc.Settings.Categories.get_Item(BuiltInCategory.OST_Rooms);
+            Category spacesCat = doc.Settings.Categories.get_Item(BuiltInCategory.OST_MEPSpaces);
+            spacesCategory.Insert(roomsCat);
+            spacesCategory.Insert(spacesCat);
 
+            // Add shared parameter Def3 to space categories
+            Binding binding2 = doc.Application.Create.NewTypeBinding(spacesCategory);
+            binding2 = doc.Application.Create.NewInstanceBinding(spacesCategory);
+
+            map = (new UIApplication(doc.Application)).ActiveUIDocument.Document.ParameterBindings;
+            map.Insert(Def3, binding2, BuiltInParameterGroup.PG_IDENTITY_DATA);
 
             doc.Application.SharedParametersFilename = orgSharedFilePath;
             tx.Commit();

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Text.RegularExpressions;
 
 using Autodesk;
 using Autodesk.Revit;
@@ -25,25 +26,42 @@ namespace NIRAS.Revit.TTL_Exporter
         {
             Transaction tx = new Transaction(doc);
 
+            string cat = e.Category.Name;
+            string elType = cat.ToLower();   // Make lower case
+            elType = elType.Remove(cat.Length - 1); // Singularize
 
-            string guid = Host + "/" + ProNum + "/" + e.Category.Name + "/" + e.UniqueId;
+            //string guid = Host + "/" + ProNum + "/" + e.Category.Name + "/" + e.UniqueId;
+            string guid = $"{Host}/{ProNum}/{elType}_{ e.UniqueId }";
             guid = guid.Replace(" ", "_");
             
+            tx.Start("Add URL");
 
-            if (e.LookupParameter("URI").AsString() == "" && e.GroupId == null)
-            {
-                tx.Start("Add URL");
-
-                e.LookupParameter("URI").Set(guid);
-                tx.Commit();
-            }
-
-            
-
-
+            e.LookupParameter("URI").Set(guid);
+            tx.Commit();
 
             return guid;
 
+        }
+
+        public static string ToL1Prop(string property, string value)
+        {
+            return $"{property} {value}";
+        }
+
+        public static string ToL3Prop(string property, string value, string guid)
+        {
+            // Get property without prefix
+            string prop = Regex.Matches(property, @"([^:]+)$")[0].Value;
+
+            string propURI = $"inst:{prop}_{guid}";
+            string stateURI = $"inst:state_{prop}_{ Guid.NewGuid().ToString() }";
+
+            return $"{property} {propURI} .\n" +
+                $"{propURI}\n" +
+                $"\tseas:evaluation {stateURI} .\n" +
+                $"{stateURI}\n" +
+                $"\ta opm:CurrentState ;\n" +
+                $"\tschema:value {value}";
         }
 
 

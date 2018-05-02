@@ -27,12 +27,16 @@ namespace NIRAS.Revit.TTL_Exporter
           ElementSet elements)
         {
 
+            // SETTINGS
+            Boolean opm = true;
+            Boolean cdt = false;
+
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Document doc = uidoc.Document;
             Transaction tx = new Transaction(doc);
             Dictionary<ElementId, string> ElementDict = new Dictionary<ElementId, string>();
-            Parameters.Add_sharedParameters(doc);
+            //Parameters.Add_sharedParameters(doc);
 
 
             SaveFileDialog savefile = new SaveFileDialog();
@@ -53,6 +57,8 @@ namespace NIRAS.Revit.TTL_Exporter
                        .OfCategory(BuiltInCategory.OST_ProjectInformation)
                        .FirstElement() as ProjectInfo).LookupParameter("Host").AsString();
 
+                String Namespace = $"{Host}/{ProNum}/";
+
                 string NL = Environment.NewLine;
                 string NLT = Environment.NewLine + "\t";
 
@@ -62,12 +68,21 @@ namespace NIRAS.Revit.TTL_Exporter
                 String tString =
                          "@prefix bot:\t<https://w3id.org/bot#> ." +
                     NL + "@prefix rdfs:\t<http://www.w3.org/2000/01/rdf-schema#> ." +
-                    NL + "@prefix rvt:\t<https://example.org/rvt#> .";
+                    NL + "@prefix rvt:\t<https://example.org/rvt#> ." +
+                    NL + $"@prefix inst:\t<{Namespace}> .";
 
                 String pString = 
                          "@prefix props:\t<https://w3id.org/props#> ." +
                     NL + "@prefix rdfs:\t<http://www.w3.org/2000/01/rdf-schema#> ." +
-                    NL + "@prefix cdt:\t<http://w3id.org/lindt/custom_datatypes#> .";
+                    NL + "@prefix xsd:\t<http://www.w3.org/2001/XMLSchema#> ." +
+                    NL + "@prefix ex:\t\t<https://example.org/> ." +
+                    NL + $"@prefix inst:\t<{Namespace}> .";
+
+                if (cdt) pString += NL + "@prefix cdt:\t<http://w3id.org/lindt/custom_datatypes#> .";
+
+                if (opm) pString += NL + "@prefix opm:\t<https://w3id.org/opm#> ." +
+                        NL + "@prefix seas:\t<https://w3id.org/seas/> ." +
+                        NL + "@prefix schema:\t<http://schema.org/> .";
 
 
                 tString += NL + NL + "### ELEMENTS ###";
@@ -83,22 +98,48 @@ namespace NIRAS.Revit.TTL_Exporter
 
                 foreach (Element e in walls)
                 {
-                    
-                    
-                    string guid = Util.GetGuid(doc,e,Host,ProNum);
-                    ElementDict.Add(e.Id, guid);
+
+                    Wall wall = e as Wall;
+
+                    string URI = e.LookupParameter("URI").AsString().Replace(Namespace, "inst:");
+                    ElementDict.Add(e.Id, URI);
 
                     // Append classes to 
                     tString +=
-                        NL + $"<{guid}>" +
+                        NL + $"{URI}" +
                         NLT + "a bot:Element ;" +
                         NLT + $"rvt:guid \"{e.UniqueId}\" .";
-                    pString +=
-                        NL + $"<{guid}>" +
-                        NLT + $"rdfs:label \"{e.Name}\" ;" +
-                        NLT + "props:dimensionsWidth\" " + (e as Wall).Width * 304.8  + " mm\"^^cdt:length ;" +
-                        NLT + "props:dimensionsLength\" " + (e as Wall).get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH).AsValueString() + " mm\"^^cdt:length .";
 
+                    string width = Math.Round(UnitUtils.ConvertFromInternalUnits(wall.Width, Autodesk.Revit.DB.DisplayUnitType.DUT_MILLIMETERS), 2).ToString().Replace(",", ".");
+                    double curveLength = wall.get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH).AsDouble();
+                    string length = Math.Round(UnitUtils.ConvertFromInternalUnits(curveLength, Autodesk.Revit.DB.DisplayUnitType.DUT_MILLIMETERS), 2).ToString().Replace(",", ".");
+
+                    if (cdt)
+                    {
+                        width = $"\"{width} mm\"^^cdt:length";
+                        length = $"\"{length} mm\"^^cdt:length";
+                    }
+                    else
+                    {
+                        width = $"\"{width}\"^^xsd:decimal";
+                        length = $"\"{length}\"^^xsd:decimal";
+                    }
+
+                    pString +=
+                        NL + $"{URI}" +
+                        NLT + $"rdfs:label \"{e.Name}\" ;";
+
+                    if (opm)
+                    {
+                        pString += NLT + $"{ Util.ToL3Prop("props:dimensionsWidth", width, e.UniqueId) } ;";
+                        pString += NLT + $"{ Util.ToL3Prop("props:dimensionsLength", length, e.UniqueId) } .";
+                    }
+                    else
+                    {
+                        pString += NLT + $"{ Util.ToL1Prop("props:dimensionsWidth", width) } ;";
+                        pString += NLT + $"{ Util.ToL1Prop("props:dimensionsLength", length) } .";
+                    }
+                        
                 }
 
                 #endregion
@@ -119,15 +160,15 @@ namespace NIRAS.Revit.TTL_Exporter
 
                 foreach (Element e in WinDoor)
                 {
-                    string guid = Util.GetGuid(doc, e, Host, ProNum);
-                    ElementDict.Add(e.Id, guid);
+                    string URI = e.LookupParameter("URI").AsString().Replace(Namespace, "inst:");
+                    ElementDict.Add(e.Id, URI);
 
                     tString +=
-                        NL + $"<{guid}>" +
+                        NL + $"{URI}" +
                         NLT + "a bot:Element ;" +
                         NLT + "rvt:guid \"" + e.UniqueId + "\" .";
                     pString +=
-                        NL + $"<{guid}>" +
+                        NL + $"{URI}" +
                         NLT + "rdfs:label \"" + e.Name + "\" .";
 
                 }
@@ -145,11 +186,11 @@ namespace NIRAS.Revit.TTL_Exporter
 
                 foreach (Level e in levels)
                 {
-                    string guid = Util.GetGuid(doc, e, Host, ProNum);
-                    ElementDict.Add(e.Id, guid);
+                    string URI = e.LookupParameter("URI").AsString().Replace(Namespace, "inst:");
+                    ElementDict.Add(e.Id, URI);
 
                     tString +=
-                        NL + @"<" + guid + ">" +
+                        NL + $"<{URI}>" +
                         NLT + "a bot:Storey ;" +
                         NLT + "rdfs:label \"" + e.Name + "\" ;" +
                         NLT + "rvt:guid \"" + e.UniqueId + "\" .";
@@ -168,45 +209,91 @@ namespace NIRAS.Revit.TTL_Exporter
 
                 foreach (Element e in spaces)
                 {
-                    string guid = Util.GetGuid(doc, e, Host, ProNum);
-                    ElementDict.Add(e.Id, guid);                    
+                    string URI = e.LookupParameter("URI").AsString().Replace(Namespace, "inst:");
+                    ElementDict.Add(e.Id, URI);
 
                     if (e.Category.Name == "Spaces")
                     {
                         Space space = e as Space;
 
-                        string area = Math.Round(UnitUtils.ConvertFromInternalUnits(space.Area, Autodesk.Revit.DB.DisplayUnitType.DUT_SQUARE_METERS),2).ToString().Replace(",", ".");
-                        string volume = Math.Round(UnitUtils.ConvertFromInternalUnits(space.Volume, Autodesk.Revit.DB.DisplayUnitType.DUT_CUBIC_METERS),2).ToString().Replace(",", ".");
-
                         tString +=
-                            NL + $"<{guid}>" +
+                            NL + $"{URI}" +
                             NLT + "a bot:Space ;" +
                             NLT + $"rvt:guid \"{space.UniqueId}\" .";
 
+                        string area = Math.Round(UnitUtils.ConvertFromInternalUnits(space.Area, Autodesk.Revit.DB.DisplayUnitType.DUT_SQUARE_METERS), 2).ToString().Replace(",", ".");
+                        string volume = Math.Round(UnitUtils.ConvertFromInternalUnits(space.Volume, Autodesk.Revit.DB.DisplayUnitType.DUT_CUBIC_METERS), 2).ToString().Replace(",", ".");
+
+                        if (cdt)
+                        {
+                            area = $"\"{area} m2\"^^cdt:area";
+                            volume = $"\"{volume} m3\"^^cdt:volume";
+                        }
+                        else
+                        {
+                            area = $"\"{area}\"^^xsd:decimal";
+                            volume = $"\"{volume}\"^^xsd:decimal";
+                        }
+
                         pString +=
-                            NL + $"<{guid}>" +
-                            NLT + $"rdfs:label \"{space.Name}\" ;" +
-                            NLT + $"props:dimensionsArea\" {area} m2\"^^cdt:area ;" +
-                            NLT + $"props:dimensionsVolume\" {volume} m3\"^^cdt:volume .";
+                            NL + $"{URI}" +
+                            NLT + $"rdfs:label \"{space.Name}\" ;";
+
+                        string typeURI = space.LookupParameter("SpaceTypeURI").AsString();
+                        if (typeURI != null) pString += NLT + $"ex:hasRequirementModel <{typeURI}> ;";
+
+                        if (opm)
+                        {
+                            pString += NLT + $"{ Util.ToL3Prop("props:dimensionsArea", area, e.UniqueId) } ;";
+                            pString += NLT + $"{ Util.ToL3Prop("props:dimensionsVolume", volume, e.UniqueId) } .";
+                        }
+                        else
+                        {
+                            pString += NLT + $"{ Util.ToL1Prop("props:dimensionsArea", area) } ;";
+                            pString += NLT + $"{ Util.ToL1Prop("props:dimensionsVolume", volume) } .";
+                        }
                     }
 
                     if (e.Category.Name == "Rooms")
                     {
                         Room room = e as Room;
 
-                        string area = Math.Round(UnitUtils.ConvertFromInternalUnits(room.Area, Autodesk.Revit.DB.DisplayUnitType.DUT_SQUARE_METERS),2).ToString().Replace(",",".");
-                        string volume = Math.Round(UnitUtils.ConvertFromInternalUnits(room.Volume, Autodesk.Revit.DB.DisplayUnitType.DUT_CUBIC_METERS), 2).ToString().Replace(",", ".");
-
                         tString +=
-                            NL + $"<{guid}>" +
+                            NL + $"{URI}" +
                             NLT + "a bot:Space ;" +
                             NLT + $"rvt:guid \"{room.UniqueId}\" .";
 
+                        string area = Math.Round(UnitUtils.ConvertFromInternalUnits(room.Area, Autodesk.Revit.DB.DisplayUnitType.DUT_SQUARE_METERS), 2).ToString().Replace(",", ".");
+                        string volume = Math.Round(UnitUtils.ConvertFromInternalUnits(room.Volume, Autodesk.Revit.DB.DisplayUnitType.DUT_CUBIC_METERS), 2).ToString().Replace(",", ".");
+
+                        if (cdt)
+                        {
+                            area = $"\"{area} m2\"^^cdt:area";
+                            volume = $"\"{volume} m3\"^^cdt:volume";
+                        }
+                        else
+                        {
+                            area = $"\"{area}\"^^xsd:decimal";
+                            volume = $"\"{volume}\"^^xsd:decimal";
+                        }
+
                         pString +=
-                            NL + $"<{guid}>" +
-                            NLT + $"rdfs:label \"{room.Name}\" ;" +
-                            NLT + $"props:dimensionsArea\" {area} m2\"^^cdt:area ;" +
-                            NLT + $"props:dimensionsVolume\" {volume} m3\"^^cdt:volume .";
+                            NL + $"{URI}" +
+                            NLT + $"rdfs:label \"{room.Name}\" ;";
+
+                        string typeURI = room.LookupParameter("SpaceTypeURI").AsString();
+                        if (typeURI != null) pString += NLT + $"ex:hasRequirementModel <{typeURI}> ;";
+
+                        if (opm)
+                        {
+                            pString += NLT + $"{ Util.ToL3Prop("props:dimensionsArea", area, e.UniqueId) } ;";
+                            pString += NLT + $"{ Util.ToL3Prop("props:dimensionsVolume", volume, e.UniqueId) } .";
+                        }
+                        else
+                        {
+                            pString += NLT + $"{ Util.ToL1Prop("props:dimensionsArea", area) } ;";
+                            pString += NLT + $"{ Util.ToL1Prop("props:dimensionsVolume", volume) } .";
+                        }
 
                     }
 
@@ -227,7 +314,7 @@ namespace NIRAS.Revit.TTL_Exporter
                         FamilyInstance FamIns = e as FamilyInstance;
 
                         tString +=
-                                NL + "<" + ElementDict[FamIns.Host.Id] + "> bot:hostsElement <" + ElementDict[e.Id] + "> .";
+                                NL + $"{ElementDict[FamIns.Host.Id]} bot:hostsElement {ElementDict[e.Id]} .";
                     }
                     catch { }
                 }
@@ -240,7 +327,7 @@ namespace NIRAS.Revit.TTL_Exporter
                     try
                     {                        
                         tString +=
-                        NL + "<" + ElementDict[e.LevelId] + "> bot:hasSpace <" + ElementDict[e.Id] + "> .";
+                        NL + $"{ElementDict[e.LevelId]} bot:hasSpace {ElementDict[e.Id]} .";
                     }
                     catch { }
                 }
@@ -265,7 +352,7 @@ namespace NIRAS.Revit.TTL_Exporter
                                 {
 
                                     tString +=
-                                        NL + "<" + ElementDict[sp.Id] + "> bot:adjacentElement <" + ElementDict[id] + "> .";
+                                        NL + $"{ElementDict[sp.Id]} bot:adjacentElement {ElementDict[id]} .";
                                 }
                             }
                             catch
