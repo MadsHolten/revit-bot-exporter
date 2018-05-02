@@ -54,22 +54,25 @@ namespace NIRAS.Revit.TTL_Exporter
                        .FirstElement() as ProjectInfo).LookupParameter("Host").AsString();
 
                 string NL = Environment.NewLine;
+                string NLT = Environment.NewLine + "\t";
 
                 String Mstrign =
                            @" @prefix bot:      <https://w3id.org/bot#> ."
                     + NL + @" @prefix rdfs:     <http://www.w3.org/2000/01/rdf-schema#> ."
                     + NL + @" @prefix rvt:      <https://example.org/rvt#> ."
                     + NL + @" @prefix cdt:      <http://w3id.org/lindt/custom_datatypes#> ."
-                    + NL + @" @prefix nir:  	<https://Niras.dk/XXXX#> .";
+                    + NL + @" @prefix props:  	<https://w3id.org/props#> .";
 
                 
 
-                Mstrign += NL + NL + "# ELEMENTS";
+                Mstrign += NL + NL + "### ELEMENTS ###";
 
                 #region Walls
 
                 List<Element> walls = new FilteredElementCollector(doc)
                     .OfClass(typeof(Wall)).WhereElementIsNotElementType().ToElements().ToList();
+
+                Mstrign += NL + NL + "# WALLS";
 
                 foreach (Element e in walls)
                 {
@@ -80,11 +83,12 @@ namespace NIRAS.Revit.TTL_Exporter
 
 
                     Mstrign +=
-                        NL + @"<" + guid + "> a bot:Element ." +
-                        NL + @"<" + guid + "> rdfs:label \"" + e.Name + "\" ." +
-                        NL + @"<" + guid + "> rvt:guid \"" + e.UniqueId + "\" ." +
-                        NL + @"<" + guid + "> nir:width\" " + (e as Wall).Width * 304.8  + " mm\"^^cdt:length ." +
-                        NL + @"<" + guid + "> nir:length\" " + (e as Wall).get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH).AsValueString() + " mm\"^^cdt:length .";
+                        NL + "<" + guid + ">" +
+                        NLT + "a bot:Element ;" +
+                        NLT + "rdfs:label \"" + e.Name + "\" ;" +
+                        NLT + "rvt:guid \"" + e.UniqueId + "\" ;" +
+                        NLT + "props:dimensionsWidth\" " + (e as Wall).Width * 304.8  + " mm\"^^cdt:length ;" +
+                        NLT + "props:dimensionsLength\" " + (e as Wall).get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH).AsValueString() + " mm\"^^cdt:length .";
 
                 }
 
@@ -101,6 +105,8 @@ namespace NIRAS.Revit.TTL_Exporter
 
                          })).ToElements();
 
+                Mstrign += NL + NL + "# WINDOWS & DOORS";
+
 
                 foreach (Element e in WinDoor)
                 {
@@ -108,9 +114,10 @@ namespace NIRAS.Revit.TTL_Exporter
                     ElementDict.Add(e.Id, guid);
 
                     Mstrign +=
-                        NL + @"<" + guid + "> a bot:Element ." +
-                        NL + @"<" + guid + "> rdfs:label \"" + e.Name + "\" ." +
-                        NL + @"<" + guid + "> rvt:guid \"" + e.UniqueId + "\" .";
+                        NL + @"<" + guid + ">" +
+                        NLT + "a bot:Element ;" +
+                        NLT + "rdfs:label \"" + e.Name + "\" ;" +
+                        NLT + "rvt:guid \"" + e.UniqueId + "\" .";
 
                 }
 
@@ -123,7 +130,7 @@ namespace NIRAS.Revit.TTL_Exporter
                     .OfClass(typeof(Level)).WhereElementIsNotElementType().ToElements().Cast<Level>()
                     .ToList();
 
-                Mstrign += NL + NL + "# STOREYS";
+                Mstrign += NL + NL + "### STOREYS ###";
 
                 foreach (Level e in levels)
                 {
@@ -131,22 +138,21 @@ namespace NIRAS.Revit.TTL_Exporter
                     ElementDict.Add(e.Id, guid);
 
                     Mstrign +=
-                        NL + @"<" + guid + "> a bot:Storey ." +
-                        NL + @"<" + guid + "> rdfs:label \"" + e.Name + "\" ." +
-                        NL + @"<" + guid + "> rvt:guid \"" + e.UniqueId + "\" .";
+                        NL + @"<" + guid + ">" +
+                        NLT + "a bot:Storey ;" +
+                        NLT + "rdfs:label \"" + e.Name + "\" ;" +
+                        NLT + "rvt:guid \"" + e.UniqueId + "\" .";
                 }
 
                 #endregion
 
                 #region Rooms/Spaces
-
-                
-
+                              
                 List<Element> spaces = new FilteredElementCollector(doc)
                 .OfClass(typeof(SpatialElement)).WhereElementIsNotElementType()
                   .Where(X => X.Category.Name == "Spaces" || X.Category.Name == "Rooms").ToList<Element>();
 
-                Mstrign += NL + NL + "# SPACES";
+                Mstrign += NL + NL + "### SPACES ###";
 
                 foreach (Element e in spaces)
                 {
@@ -158,11 +164,12 @@ namespace NIRAS.Revit.TTL_Exporter
                         Space Spac = e as Space;
 
                         Mstrign +=
-                            NL + @"<" + guid + "> a bot:Space ." +
-                            NL + @"<" + guid + "> rdfs:label \"" + e.Name + "\" ." +
-                            NL + @"<" + guid + "> rvt:guid \"" + e.UniqueId + "\" ." +
-                            NL + @"<" + guid + "> nir:space_area\" " + Spac.Area * Math.Pow(304.8, 2) + " mm2 \"^^cdt:ucum ." +
-                            NL + @"<" + guid + "> nir:space_volume\" " + Spac.Volume * Math.Pow(304.8, 3) + " cm3\"^^cdt:volumemm3  .";
+                            NL + @"<" + guid + ">" +
+                            NLT + "a bot:Space ;" +
+                            NLT + "rdfs:label \"" + e.Name + "\" ;" +
+                            NLT + "rvt:guid \"" + e.UniqueId + "\" ;" +
+                            NLT + "props:dimensionsArea\" " + Spac.Area * Math.Pow(304.8, 2) + " mm2\"^^cdt:ucum ;" +
+                            NLT + "props:dimensionsVolume\" " + Spac.Volume * Math.Pow(304.8, 3) + " cm3\"^^cdt:volume .";
                     }
 
                     if (e.Category.Name == "Rooms")
@@ -170,19 +177,21 @@ namespace NIRAS.Revit.TTL_Exporter
                         Room room = e as Room;
 
                         Mstrign +=
-                            NL + @"<" + guid + "> a bot:Space ." +
-                            NL + @"<" + guid + "> rdfs:label \"" + e.Name + "\" ." +
-                            NL + @"<" + guid + "> rvt:guid \"" + e.UniqueId + "\" ." +
-                            NL + @"<" + guid + "> nir:space_area\" " + room.Area * Math.Pow(304.8, 2) + " mm2 \"^^cdt:ucum ." +
-                            NL + @"<" + guid + "> nir:space_volumen\" " + room.Volume * Math.Pow(304.8, 3) + " cm3\"^^cdt:volumemm3  .";
+                            NL + @"<" + guid + ">" +
+                            NLT + "a bot:Space ;" +
+                            NLT + "rdfs:label \"" + e.Name + "\" ;" +
+                            NLT + "rvt:guid \"" + e.UniqueId + "\" ;" +
+                            NLT + "props:dimensionsArea\" " + room.Area * Math.Pow(304.8, 2) + " mm2 \"^^cdt:area ;" +
+                            NLT + "props:dimensionsVolume\" " + room.Volume * Math.Pow(304.8, 3) + " cm3\"^^cdt:volume .";
                     }
 
                 }
 
                 #endregion
 
+                Mstrign += NL + NL + "### RELATIONSHIPS ###";
 
-                Mstrign += NL + NL + "# Windows Hosted in wall";
+                Mstrign += NL + NL + "# WINDOWS AND DOORS HOSTED IN A WALL";
 
                 foreach (Element e in WinDoor)
                 {

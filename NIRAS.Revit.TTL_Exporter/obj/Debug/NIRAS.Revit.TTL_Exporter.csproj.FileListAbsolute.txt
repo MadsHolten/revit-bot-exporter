@@ -6,3 +6,7 @@ D:\C# projketer\NIRAS.Revit.Modelcheck\1. Work\NIRAS.Revit.TTL_Exporter\NIRAS.Re
 D:\C# projketer\TTL Exporter\1 working\NIRAS.Revit.TTL_Exporter 0.0.0.2\NIRAS.Revit.TTL_Exporter\obj\Debug\NIRAS.Revit.TTL_Exporter.csprojResolveAssemblyReference.cache
 D:\C# projketer\TTL Exporter\1 working\NIRAS.Revit.TTL_Exporter 0.0.0.2\NIRAS.Revit.TTL_Exporter\obj\Debug\NIRAS.Revit.TTL_Exporter.dll
 D:\C# projketer\TTL Exporter\1 working\NIRAS.Revit.TTL_Exporter 0.0.0.2\NIRAS.Revit.TTL_Exporter\obj\Debug\NIRAS.Revit.TTL_Exporter.pdb
+C:\Users\MHRA\source\repos\revit-bot-exporter\NIRAS.Revit.TTL_Exporter\obj\Debug\NIRAS.Revit.TTL_Exporter.csprojResolveAssemblyReference.cache
+C:\Users\MHRA\source\repos\revit-bot-exporter\NIRAS.Revit.TTL_Exporter\obj\Debug\NIRAS.Revit.TTL_Exporter.csproj.CoreCompileInputs.cache
+C:\Users\MHRA\source\repos\revit-bot-exporter\NIRAS.Revit.TTL_Exporter\obj\Debug\NIRAS.Revit.TTL_Exporter.dll
+C:\Users\MHRA\source\repos\revit-bot-exporter\NIRAS.Revit.TTL_Exporter\obj\Debug\NIRAS.Revit.TTL_Exporter.pdb
