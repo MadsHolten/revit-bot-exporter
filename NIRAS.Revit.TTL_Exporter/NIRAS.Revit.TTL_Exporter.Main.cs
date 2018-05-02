@@ -56,23 +56,30 @@ namespace NIRAS.Revit.TTL_Exporter
                 string NL = Environment.NewLine;
                 string NLT = Environment.NewLine + "\t";
 
-                String Mstrign =
-                           @" @prefix bot:      <https://w3id.org/bot#> ."
-                    + NL + @" @prefix rdfs:     <http://www.w3.org/2000/01/rdf-schema#> ."
-                    + NL + @" @prefix rvt:      <https://example.org/rvt#> ."
-                    + NL + @" @prefix cdt:      <http://w3id.org/lindt/custom_datatypes#> ."
-                    + NL + @" @prefix props:  	<https://w3id.org/props#> .";
+                // tString : Topology string
+                // pString : Property string
 
-                
+                String tString =
+                         "@prefix bot:\t<https://w3id.org/bot#> ." +
+                    NL + "@prefix rdfs:\t<http://www.w3.org/2000/01/rdf-schema#> ." +
+                    NL + "@prefix rvt:\t<https://example.org/rvt#> .";
 
-                Mstrign += NL + NL + "### ELEMENTS ###";
+                String pString = 
+                         "@prefix props:\t<https://w3id.org/props#> ." +
+                    NL + "@prefix rdfs:\t<http://www.w3.org/2000/01/rdf-schema#> ." +
+                    NL + "@prefix cdt:\t<http://w3id.org/lindt/custom_datatypes#> .";
+
+
+                tString += NL + NL + "### ELEMENTS ###";
+                pString += NL + NL + "### ELEMENTS ###";
 
                 #region Walls
 
                 List<Element> walls = new FilteredElementCollector(doc)
                     .OfClass(typeof(Wall)).WhereElementIsNotElementType().ToElements().ToList();
 
-                Mstrign += NL + NL + "# WALLS";
+                tString += NL + NL + "# WALLS";
+                pString += NL + NL + "# WALLS";
 
                 foreach (Element e in walls)
                 {
@@ -81,12 +88,14 @@ namespace NIRAS.Revit.TTL_Exporter
                     string guid = Util.GetGuid(doc,e,Host,ProNum);
                     ElementDict.Add(e.Id, guid);
 
-
-                    Mstrign +=
-                        NL + "<" + guid + ">" +
+                    // Append classes to 
+                    tString +=
+                        NL + $"<{guid}>" +
                         NLT + "a bot:Element ;" +
-                        NLT + "rdfs:label \"" + e.Name + "\" ;" +
-                        NLT + "rvt:guid \"" + e.UniqueId + "\" ;" +
+                        NLT + $"rvt:guid \"{e.UniqueId}\" .";
+                    pString +=
+                        NL + $"<{guid}>" +
+                        NLT + $"rdfs:label \"{e.Name}\" ;" +
                         NLT + "props:dimensionsWidth\" " + (e as Wall).Width * 304.8  + " mm\"^^cdt:length ;" +
                         NLT + "props:dimensionsLength\" " + (e as Wall).get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH).AsValueString() + " mm\"^^cdt:length .";
 
@@ -105,19 +114,21 @@ namespace NIRAS.Revit.TTL_Exporter
 
                          })).ToElements();
 
-                Mstrign += NL + NL + "# WINDOWS & DOORS";
-
+                tString += NL + NL + "# WINDOWS & DOORS";
+                pString += NL + NL + "# WINDOWS & DOORS";
 
                 foreach (Element e in WinDoor)
                 {
                     string guid = Util.GetGuid(doc, e, Host, ProNum);
                     ElementDict.Add(e.Id, guid);
 
-                    Mstrign +=
-                        NL + @"<" + guid + ">" +
+                    tString +=
+                        NL + $"<{guid}>" +
                         NLT + "a bot:Element ;" +
-                        NLT + "rdfs:label \"" + e.Name + "\" ;" +
                         NLT + "rvt:guid \"" + e.UniqueId + "\" .";
+                    pString +=
+                        NL + $"<{guid}>" +
+                        NLT + "rdfs:label \"" + e.Name + "\" .";
 
                 }
 
@@ -130,14 +141,14 @@ namespace NIRAS.Revit.TTL_Exporter
                     .OfClass(typeof(Level)).WhereElementIsNotElementType().ToElements().Cast<Level>()
                     .ToList();
 
-                Mstrign += NL + NL + "### STOREYS ###";
+                tString += NL + NL + "### STOREYS ###";
 
                 foreach (Level e in levels)
                 {
                     string guid = Util.GetGuid(doc, e, Host, ProNum);
                     ElementDict.Add(e.Id, guid);
 
-                    Mstrign +=
+                    tString +=
                         NL + @"<" + guid + ">" +
                         NLT + "a bot:Storey ;" +
                         NLT + "rdfs:label \"" + e.Name + "\" ;" +
@@ -152,7 +163,8 @@ namespace NIRAS.Revit.TTL_Exporter
                 .OfClass(typeof(SpatialElement)).WhereElementIsNotElementType()
                   .Where(X => X.Category.Name == "Spaces" || X.Category.Name == "Rooms").ToList<Element>();
 
-                Mstrign += NL + NL + "### SPACES ###";
+                tString += NL + NL + "### SPACES ###";
+                pString += NL + NL + "### SPACES ###";
 
                 foreach (Element e in spaces)
                 {
@@ -161,37 +173,52 @@ namespace NIRAS.Revit.TTL_Exporter
 
                     if (e.Category.Name == "Spaces")
                     {
-                        Space Spac = e as Space;
+                        Space space = e as Space;
 
-                        Mstrign +=
-                            NL + @"<" + guid + ">" +
+                        string area = Math.Round(UnitUtils.ConvertFromInternalUnits(space.Area, Autodesk.Revit.DB.DisplayUnitType.DUT_SQUARE_METERS),2).ToString().Replace(",", ".");
+                        string volume = Math.Round(UnitUtils.ConvertFromInternalUnits(space.Volume, Autodesk.Revit.DB.DisplayUnitType.DUT_CUBIC_METERS),2).ToString().Replace(",", ".");
+
+                        tString +=
+                            NL + $"<{guid}>" +
                             NLT + "a bot:Space ;" +
-                            NLT + "rdfs:label \"" + e.Name + "\" ;" +
-                            NLT + "rvt:guid \"" + e.UniqueId + "\" ;" +
-                            NLT + "props:dimensionsArea\" " + Spac.Area * Math.Pow(304.8, 2) + " mm2\"^^cdt:ucum ;" +
-                            NLT + "props:dimensionsVolume\" " + Spac.Volume * Math.Pow(304.8, 3) + " cm3\"^^cdt:volume .";
+                            NLT + $"rvt:guid \"{space.UniqueId}\" .";
+
+                        pString +=
+                            NL + $"<{guid}>" +
+                            NLT + $"rdfs:label \"{space.Name}\" ;" +
+                            NLT + $"props:dimensionsArea\" {area} m2\"^^cdt:area ;" +
+                            NLT + $"props:dimensionsVolume\" {volume} m3\"^^cdt:volume .";
                     }
 
                     if (e.Category.Name == "Rooms")
                     {
                         Room room = e as Room;
 
-                        Mstrign +=
-                            NL + @"<" + guid + ">" +
+                        string area = Math.Round(UnitUtils.ConvertFromInternalUnits(room.Area, Autodesk.Revit.DB.DisplayUnitType.DUT_SQUARE_METERS),2).ToString().Replace(",",".");
+                        string volume = Math.Round(UnitUtils.ConvertFromInternalUnits(room.Volume, Autodesk.Revit.DB.DisplayUnitType.DUT_CUBIC_METERS), 2).ToString().Replace(",", ".");
+
+                        tString +=
+                            NL + $"<{guid}>" +
                             NLT + "a bot:Space ;" +
-                            NLT + "rdfs:label \"" + e.Name + "\" ;" +
-                            NLT + "rvt:guid \"" + e.UniqueId + "\" ;" +
-                            NLT + "props:dimensionsArea\" " + room.Area * Math.Pow(304.8, 2) + " mm2 \"^^cdt:area ;" +
-                            NLT + "props:dimensionsVolume\" " + room.Volume * Math.Pow(304.8, 3) + " cm3\"^^cdt:volume .";
+                            NLT + $"rvt:guid \"{room.UniqueId}\" .";
+
+                        pString +=
+                            NL + $"<{guid}>" +
+                            NLT + $"rdfs:label \"{room.Name}\" ;" +
+                            NLT + $"props:dimensionsArea\" {area} m2\"^^cdt:area ;" +
+                            NLT + $"props:dimensionsVolume\" {volume} m3\"^^cdt:volume .";
+
                     }
 
                 }
 
                 #endregion
 
-                Mstrign += NL + NL + "### RELATIONSHIPS ###";
+                #region Relationships
 
-                Mstrign += NL + NL + "# WINDOWS AND DOORS HOSTED IN A WALL";
+                tString += NL + NL + "### RELATIONSHIPS ###";
+
+                tString += NL + NL + "# WINDOWS AND DOORS HOSTED IN A WALL";
 
                 foreach (Element e in WinDoor)
                 {
@@ -199,26 +226,26 @@ namespace NIRAS.Revit.TTL_Exporter
                     {
                         FamilyInstance FamIns = e as FamilyInstance;
 
-                        Mstrign +=
+                        tString +=
                                 NL + "<" + ElementDict[FamIns.Host.Id] + "> bot:hostsElement <" + ElementDict[e.Id] + "> .";
                     }
                     catch { }
                 }
 
-                Mstrign += NL + NL + "# ROOMS AT EACH STOREY";
+                tString += NL + NL + "# ROOMS AT EACH STOREY";
 
                 foreach (Element e in spaces)
                 {
                     
                     try
                     {                        
-                        Mstrign +=
+                        tString +=
                         NL + "<" + ElementDict[e.LevelId] + "> bot:hasSpace <" + ElementDict[e.Id] + "> .";
                     }
                     catch { }
                 }
 
-                Mstrign += NL + NL + "# ELEMENTS ADJACENT TO ROOMS";
+                tString += NL + NL + "# ELEMENTS ADJACENT TO ROOMS";
 
                 foreach (SpatialElement sp in spaces)
                 {
@@ -237,7 +264,7 @@ namespace NIRAS.Revit.TTL_Exporter
                                 if (doc.GetElement(id).Category.Name == "Walls")
                                 {
 
-                                    Mstrign +=
+                                    tString +=
                                         NL + "<" + ElementDict[sp.Id] + "> bot:adjacentElement <" + ElementDict[id] + "> .";
                                 }
                             }
@@ -246,15 +273,22 @@ namespace NIRAS.Revit.TTL_Exporter
                         }
                 }
 
-
+                #endregion
 
 
 
                 using (StreamWriter writer =
                 new StreamWriter(savefile.FileName))
                 {
-                    writer.Write(Mstrign);
+                    writer.Write(tString);
                 }
+
+                using (StreamWriter writer =
+                new StreamWriter(savefile.FileName.Replace(".ttl", "_props.ttl")))
+                {
+                    writer.Write(pString);
+                }
+
             }
 
             return Result.Succeeded;
