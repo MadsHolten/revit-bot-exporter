@@ -22,24 +22,18 @@ namespace NIRAS.Revit.TTL_Exporter
     class Util
     {
 
-        public static string GetGuid(Document doc, Element e, string Host,string ProNum)
+        public static string CreateURI(Element e, string Host,string ProNum)
         {
-            Transaction tx = new Transaction(doc);
 
             string cat = e.Category.Name;
             string elType = cat.ToLower();   // Make lower case
             elType = elType.Remove(cat.Length - 1); // Singularize
 
             //string guid = Host + "/" + ProNum + "/" + e.Category.Name + "/" + e.UniqueId;
-            string guid = $"{Host}/{ProNum}/{elType}_{ e.UniqueId }";
-            guid = guid.Replace(" ", "_");
-            
-            tx.Start("Add URL");
+            string uri = $"{Host}/{ProNum}/{elType}_{ e.UniqueId }";
+            uri = uri.Replace(" ", "_");
 
-            e.LookupParameter("URI").Set(guid);
-            tx.Commit();
-
-            return guid;
+            return uri;
 
         }
 

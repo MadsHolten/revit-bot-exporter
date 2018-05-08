@@ -114,8 +114,7 @@ namespace NIRAS.Revit.TTL_Exporter
                     try
                     {
 
-                        string s = Host + "/" + ProNum + "/" + e.Category.Name + "/" + Guid.NewGuid().ToString();
-                        s = s.Replace(" ", "_");
+                        string s = Util.CreateURI(e, Host, ProNum);
 
                         e.LookupParameter("URI").Set(s);
                         count += 1;
@@ -160,8 +159,7 @@ namespace NIRAS.Revit.TTL_Exporter
 
                 try
                 {
-                    uri = Host + "/" + ProNum + "/" + e.Category.Name + "/" + Guid.NewGuid().ToString();
-                    uri = uri.Replace(" ", "_");
+                    uri = Util.CreateURI(e, Host, ProNum);
 
                     e.LookupParameter("URI").Set(uri);
                 }
