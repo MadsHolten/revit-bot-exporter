@@ -36,7 +36,9 @@ namespace NIRAS.Revit.TTL_Exporter
             Document doc = uidoc.Document;
             Transaction tx = new Transaction(doc);
             Dictionary<ElementId, string> ElementDict = new Dictionary<ElementId, string>();
-            //Parameters.Add_sharedParameters(doc);
+
+            // Append URIs
+            // Parameters.GenerateURIs(doc);
 
 
             SaveFileDialog savefile = new SaveFileDialog();
@@ -101,7 +103,8 @@ namespace NIRAS.Revit.TTL_Exporter
 
                     Wall wall = e as Wall;
 
-                    string URI = e.LookupParameter("URI").AsString().Replace(Namespace, "inst:");
+                    string URI = Parameters.GenerateURIifNotExist(doc, e).Replace(Namespace, "inst:");
+
                     ElementDict.Add(e.Id, URI);
 
                     // Append classes to 
@@ -125,19 +128,19 @@ namespace NIRAS.Revit.TTL_Exporter
                         length = $"\"{length}\"^^xsd:decimal";
                     }
 
-                    pString +=
-                        NL + $"{URI}" +
-                        NLT + $"rdfs:label \"{e.Name}\" ;";
+                    string name = $"\"{e.Name}\"";
 
                     if (opm)
                     {
-                        pString += NLT + $"{ Util.ToL3Prop("props:dimensionsWidth", width, e.UniqueId) } ;";
-                        pString += NLT + $"{ Util.ToL3Prop("props:dimensionsLength", length, e.UniqueId) } .";
+                        pString += NL + Util.ToL3Prop(URI, "props:identityDataName", name, e.UniqueId);
+                        pString += NL + Util.ToL3Prop(URI, "props:dimensionsWidth", width, e.UniqueId);
+                        pString += NL + Util.ToL3Prop(URI, "props:dimensionsLength", length, e.UniqueId);
                     }
                     else
                     {
-                        pString += NLT + $"{ Util.ToL1Prop("props:dimensionsWidth", width) } ;";
-                        pString += NLT + $"{ Util.ToL1Prop("props:dimensionsLength", length) } .";
+                        pString += NL + Util.ToL1Prop(URI, "props:identityDataName", name);
+                        pString += NL + Util.ToL1Prop(URI, "props:dimensionsWidth", width);
+                        pString += NL + Util.ToL1Prop(URI, "props:dimensionsLength", length);
                     }
                         
                 }
@@ -160,16 +163,24 @@ namespace NIRAS.Revit.TTL_Exporter
 
                 foreach (Element e in WinDoor)
                 {
-                    string URI = e.LookupParameter("URI").AsString().Replace(Namespace, "inst:");
+                    string URI = Parameters.GenerateURIifNotExist(doc, e).Replace(Namespace, "inst:");
                     ElementDict.Add(e.Id, URI);
 
                     tString +=
                         NL + $"{URI}" +
                         NLT + "a bot:Element ;" +
                         NLT + "rvt:guid \"" + e.UniqueId + "\" .";
-                    pString +=
-                        NL + $"{URI}" +
-                        NLT + "rdfs:label \"" + e.Name + "\" .";
+
+                    string name = $"\"{e.Name}\"";
+
+                    if (opm)
+                    {
+                        pString += NL + Util.ToL3Prop(URI, "props:identityDataName", name, e.UniqueId);
+                    }
+                    else
+                    {
+                        pString += NL + Util.ToL1Prop(URI, "props:identityDataName", name);
+                    }
 
                 }
 
@@ -186,14 +197,24 @@ namespace NIRAS.Revit.TTL_Exporter
 
                 foreach (Level e in levels)
                 {
-                    string URI = e.LookupParameter("URI").AsString().Replace(Namespace, "inst:");
+                    string URI = Parameters.GenerateURIifNotExist(doc, e).Replace(Namespace, "inst:");
                     ElementDict.Add(e.Id, URI);
 
                     tString +=
                         NL + $"<{URI}>" +
                         NLT + "a bot:Storey ;" +
-                        NLT + "rdfs:label \"" + e.Name + "\" ;" +
                         NLT + "rvt:guid \"" + e.UniqueId + "\" .";
+
+                    string name = $"\"{e.Name}\"";
+
+                    if (opm)
+                    {
+                        pString += NL + Util.ToL3Prop(URI, "props:identityDataName", name, e.UniqueId);
+                    }
+                    else
+                    {
+                        pString += NL + Util.ToL1Prop(URI, "props:identityDataName", name);
+                    }
                 }
 
                 #endregion
@@ -209,7 +230,7 @@ namespace NIRAS.Revit.TTL_Exporter
 
                 foreach (Element e in spaces)
                 {
-                    string URI = e.LookupParameter("URI").AsString().Replace(Namespace, "inst:");
+                    string URI = Parameters.GenerateURIifNotExist(doc, e).Replace(Namespace, "inst:");
                     ElementDict.Add(e.Id, URI);
 
                     if (e.Category.Name == "Spaces")
@@ -235,22 +256,25 @@ namespace NIRAS.Revit.TTL_Exporter
                             volume = $"\"{volume}\"^^xsd:decimal";
                         }
 
-                        pString +=
-                            NL + $"{URI}" +
-                            NLT + $"rdfs:label \"{space.Name}\" ;";
+                        string name = $"\"{e.Name}\"";
 
-                        string typeURI = space.LookupParameter("SpaceTypeURI").AsString();
-                        if (typeURI != null) pString += NLT + $"ex:hasRequirementModel <{typeURI}> ;";
+                        if (space.LookupParameter("SpaceTypeURI") != null)
+                        {
+                            string typeURI = space.LookupParameter("SpaceTypeURI").AsString();
+                            pString += NL + URI + NLT + $"ex:hasRequirementModel <{typeURI}> .";
+                        }
 
                         if (opm)
                         {
-                            pString += NLT + $"{ Util.ToL3Prop("props:dimensionsArea", area, e.UniqueId) } ;";
-                            pString += NLT + $"{ Util.ToL3Prop("props:dimensionsVolume", volume, e.UniqueId) } .";
+                            pString += NL + Util.ToL3Prop(URI, "props:identityDataName", name, e.UniqueId);
+                            pString += NL + Util.ToL3Prop(URI, "props:dimensionsArea", area, e.UniqueId);
+                            pString += NL + Util.ToL3Prop(URI, "props:dimensionsVolume", volume, e.UniqueId);
                         }
                         else
                         {
-                            pString += NLT + $"{ Util.ToL1Prop("props:dimensionsArea", area) } ;";
-                            pString += NLT + $"{ Util.ToL1Prop("props:dimensionsVolume", volume) } .";
+                            pString += NL + Util.ToL1Prop(URI, "props:identityDataName", name);
+                            pString += NL + Util.ToL1Prop(URI, "props:dimensionsArea", area);
+                            pString += NL + Util.ToL1Prop(URI, "props:dimensionsVolume", volume);
                         }
                     }
 
@@ -277,22 +301,28 @@ namespace NIRAS.Revit.TTL_Exporter
                             volume = $"\"{volume}\"^^xsd:decimal";
                         }
 
-                        pString +=
-                            NL + $"{URI}" +
-                            NLT + $"rdfs:label \"{room.Name}\" ;";
+                        string name = $"\"{room.Name}\"";
+                        string number = $"\"{room.Number}\"";
 
-                        string typeURI = room.LookupParameter("SpaceTypeURI").AsString();
-                        if (typeURI != null) pString += NLT + $"ex:hasRequirementModel <{typeURI}> ;";
+                        if(room.LookupParameter("SpaceTypeURI") != null)
+                        {
+                            string typeURI = room.LookupParameter("SpaceTypeURI").AsString();
+                            pString += NL + URI + NLT + $"ex:hasRequirementModel <{typeURI}> .";
+                        }
 
                         if (opm)
                         {
-                            pString += NLT + $"{ Util.ToL3Prop("props:dimensionsArea", area, e.UniqueId) } ;";
-                            pString += NLT + $"{ Util.ToL3Prop("props:dimensionsVolume", volume, e.UniqueId) } .";
+                            pString += NL + Util.ToL3Prop(URI, "props:identityDataNumber", number, e.UniqueId);
+                            pString += NL + Util.ToL3Prop(URI, "props:identityDataName", name, e.UniqueId);
+                            pString += NL + Util.ToL3Prop(URI, "props:dimensionsArea", area, e.UniqueId);
+                            pString += NL + Util.ToL3Prop(URI, "props:dimensionsVolume", volume, e.UniqueId);
                         }
                         else
                         {
-                            pString += NLT + $"{ Util.ToL1Prop("props:dimensionsArea", area) } ;";
-                            pString += NLT + $"{ Util.ToL1Prop("props:dimensionsVolume", volume) } .";
+                            pString += NL + Util.ToL1Prop(URI, "props:identityDataNumber", number);
+                            pString += NL + Util.ToL1Prop(URI, "props:identityDataName", name);
+                            pString += NL + Util.ToL1Prop(URI, "props:dimensionsArea", area);
+                            pString += NL + Util.ToL1Prop(URI, "props:dimensionsVolume", volume);
                         }
 
                     }
@@ -362,8 +392,6 @@ namespace NIRAS.Revit.TTL_Exporter
 
                 #endregion
 
-
-
                 using (StreamWriter writer =
                 new StreamWriter(savefile.FileName))
                 {
@@ -377,6 +405,8 @@ namespace NIRAS.Revit.TTL_Exporter
                 }
 
             }
+
+            //TaskDialog.Show("Success", $"Successfully exported triples");
 
             return Result.Succeeded;
 

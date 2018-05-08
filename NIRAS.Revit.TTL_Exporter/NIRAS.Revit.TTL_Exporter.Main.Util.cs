@@ -43,12 +43,13 @@ namespace NIRAS.Revit.TTL_Exporter
 
         }
 
-        public static string ToL1Prop(string property, string value)
+        public static string ToL1Prop(string foi, string property, string value)
         {
-            return $"{property} {value}";
+            return $"{foi}\n" + 
+                $"{property} {value} .";
         }
 
-        public static string ToL3Prop(string property, string value, string guid)
+        public static string ToL3Prop(string foi, string property, string value, string guid)
         {
             // Get property without prefix
             string prop = Regex.Matches(property, @"([^:]+)$")[0].Value;
@@ -56,12 +57,13 @@ namespace NIRAS.Revit.TTL_Exporter
             string propURI = $"inst:{prop}_{guid}";
             string stateURI = $"inst:state_{prop}_{ Guid.NewGuid().ToString() }";
 
-            return $"{property} {propURI} .\n" +
+            return $"{foi}\n" +
+                $"\t{property} {propURI} .\n" +
                 $"{propURI}\n" +
                 $"\tseas:evaluation {stateURI} .\n" +
                 $"{stateURI}\n" +
                 $"\ta opm:CurrentState ;\n" +
-                $"\tschema:value {value}";
+                $"\tschema:value {value} .\n";
         }
 
 

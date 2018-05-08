@@ -32,10 +32,53 @@ namespace NIRAS.Revit.TTL_Exporter
 
 
 
-            Parameters.Add_sharedParameters(doc);
+            Parameters.AddSharedParameters(doc);
             // Parameters.CopyParameters(doc);
 
+            return Result.Succeeded;
 
+        }
+    }
+
+    [Transaction(TransactionMode.Manual)]
+    public class ClearURIs : IExternalCommand
+    {
+        public Result Execute(
+          ExternalCommandData commandData,
+          ref string message,
+          ElementSet elements)
+        {
+
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Document doc = uidoc.Document;
+            Transaction tx = new Transaction(doc);
+
+            FilteredElementCollector el = new FilteredElementCollector(doc).WhereElementIsNotElementType();
+
+            int count = 0;
+
+            tx.Start("Clear URIs");
+
+            foreach (Element e in el)
+            {
+                if (e.LookupParameter("URI") != null && e.LookupParameter("URI").AsString() != "")
+                {
+                    count += 1;
+                    e.LookupParameter("URI").Set("");
+                }
+            }
+
+            tx.Commit();
+
+            if(count > 0)
+            {
+                TaskDialog.Show("Success", $"Successfully cleared {count} URIs");
+            }
+            else
+            {
+                TaskDialog.Show("None", "No URIs to clear");
+            }
 
             return Result.Succeeded;
 
@@ -44,47 +87,101 @@ namespace NIRAS.Revit.TTL_Exporter
 
     public class Parameters
     {
-        public static void CopyParameters(Document doc)
+        public static void GenerateURIs(Document doc)
         {
             Transaction tx = new Transaction(doc);
+            string error = null;
 
             String ProNum = (new FilteredElementCollector(doc)
                    .OfCategory(BuiltInCategory.OST_ProjectInformation)
                    .FirstElement() as ProjectInfo).Number;
 
+            String Host = (new FilteredElementCollector(doc)
+                   .OfCategory(BuiltInCategory.OST_ProjectInformation)
+                   .FirstElement() as ProjectInfo).LookupParameter("Host").AsString();
+
+            tx.Start("Generate URIs");
+
+            FilteredElementCollector elements = new FilteredElementCollector(doc).WhereElementIsNotElementType();
+
+            int count = 0;
+
+            foreach (Element e in elements)
+            {
+                // Generate URI if none is defined
+                if (e.LookupParameter("URI") != null && e.LookupParameter("URI").AsString() == "")
+                {
+                    try
+                    {
+
+                        string s = Host + "/" + ProNum + "/" + e.Category.Name + "/" + Guid.NewGuid().ToString();
+                        s = s.Replace(" ", "_");
+
+                        e.LookupParameter("URI").Set(s);
+                        count += 1;
+                    }
+                    catch (Exception err)
+                    { error = err.ToString(); }
+                }
+
+            }
+
+            if (error != null)
+            {
+                TaskDialog.Show("Error", error);
+            }
+            else if(count > 0)
+            {
+                TaskDialog.Show("Success", $"Generated {count} new URIs");
+            }
+
+            tx.Commit();
+
+        }
+
+        public static string GenerateURIifNotExist(Document doc, Element e)
+        {
+            Transaction tx = new Transaction(doc);
+
+            string uri = null;
+
+            String ProNum = (new FilteredElementCollector(doc)
+                   .OfCategory(BuiltInCategory.OST_ProjectInformation)
+                   .FirstElement() as ProjectInfo).Number;
 
             String Host = (new FilteredElementCollector(doc)
                    .OfCategory(BuiltInCategory.OST_ProjectInformation)
                    .FirstElement() as ProjectInfo).LookupParameter("Host").AsString();
 
-            tx.Start("GUID parameter");
-
-            FilteredElementCollector elements = new FilteredElementCollector(doc).WhereElementIsNotElementType();
-
-            foreach (Element e in elements)
+            if (e.LookupParameter("URI") != null && String.IsNullOrEmpty(e.LookupParameter("URI").AsString()))
             {
+                // Begin transaction
+                tx.Start("Generate single URI");
+
                 try
                 {
+                    uri = Host + "/" + ProNum + "/" + e.Category.Name + "/" + Guid.NewGuid().ToString();
+                    uri = uri.Replace(" ", "_");
 
-                    string s = Host + "/" + ProNum + "/" + e.Category.Name + "/" + Guid.NewGuid().ToString();
-                    s = s.Replace(" ", "_");
-
-                    if (e.GroupId == null)
-                        e.LookupParameter("URI").Set(s);
+                    e.LookupParameter("URI").Set(uri);
                 }
                 catch
                 { }
 
+                tx.Commit();
+            }
+            else
+            {
+                uri = e.LookupParameter("URI").AsString();
             }
 
-            tx.Commit();
 
 
-
+            return uri;
 
         }
 
-        public static void Add_sharedParameters(Document doc)
+            public static void AddSharedParameters(Document doc)
         {
 
             Transaction tx = new Transaction(doc);
