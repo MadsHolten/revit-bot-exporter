@@ -111,7 +111,7 @@ namespace NIRAS.Revit.TTL_Exporter
                     tString +=
                         NL + $"{URI}" +
                         NLT + "a bot:Element ;" +
-                        NLT + $"rvt:guid \"{e.UniqueId}\" .";
+                        NLT + $"rvt:guid \"{e.GetIFCGUID()}\" .";
 
                     string width = Math.Round(UnitUtils.ConvertFromInternalUnits(wall.Width, Autodesk.Revit.DB.DisplayUnitType.DUT_MILLIMETERS), 2).ToString().Replace(",", ".");
                     double curveLength = wall.get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH).AsDouble();
@@ -132,9 +132,9 @@ namespace NIRAS.Revit.TTL_Exporter
 
                     if (opm)
                     {
-                        pString += NL + Util.ToL3Prop(URI, "props:identityDataName", name, e.UniqueId);
-                        pString += NL + Util.ToL3Prop(URI, "props:dimensionsWidth", width, e.UniqueId);
-                        pString += NL + Util.ToL3Prop(URI, "props:dimensionsLength", length, e.UniqueId);
+                        pString += NL + Util.ToL3Prop(URI, "props:identityDataName", name, e.GetIFCGUID());
+                        pString += NL + Util.ToL3Prop(URI, "props:dimensionsWidth", width, e.GetIFCGUID());
+                        pString += NL + Util.ToL3Prop(URI, "props:dimensionsLength", length, e.GetIFCGUID());
                     }
                     else
                     {
@@ -169,13 +169,13 @@ namespace NIRAS.Revit.TTL_Exporter
                     tString +=
                         NL + $"{URI}" +
                         NLT + "a bot:Element ;" +
-                        NLT + "rvt:guid \"" + e.UniqueId + "\" .";
+                        NLT + "rvt:guid \"" + e.GetIFCGUID() + "\" .";
 
                     string name = $"\"{e.Name}\"";
 
                     if (opm)
                     {
-                        pString += NL + Util.ToL3Prop(URI, "props:identityDataName", name, e.UniqueId);
+                        pString += NL + Util.ToL3Prop(URI, "props:identityDataName", name, e.GetIFCGUID());
                     }
                     else
                     {
@@ -203,13 +203,13 @@ namespace NIRAS.Revit.TTL_Exporter
                     tString +=
                         NL + $"<{URI}>" +
                         NLT + "a bot:Storey ;" +
-                        NLT + "rvt:guid \"" + e.UniqueId + "\" .";
+                        NLT + "rvt:guid \"" + e.GetIFCGUID() + "\" .";
 
                     string name = $"\"{e.Name}\"";
 
                     if (opm)
                     {
-                        pString += NL + Util.ToL3Prop(URI, "props:identityDataName", name, e.UniqueId);
+                        pString += NL + Util.ToL3Prop(URI, "props:identityDataName", name, e.GetIFCGUID());
                     }
                     else
                     {
@@ -240,7 +240,7 @@ namespace NIRAS.Revit.TTL_Exporter
                         tString +=
                             NL + $"{URI}" +
                             NLT + "a bot:Space ;" +
-                            NLT + $"rvt:guid \"{space.UniqueId}\" .";
+                            NLT + $"rvt:guid \"{space.GetIFCGUID()}\" .";
 
                         string area = Math.Round(UnitUtils.ConvertFromInternalUnits(space.Area, Autodesk.Revit.DB.DisplayUnitType.DUT_SQUARE_METERS), 2).ToString().Replace(",", ".");
                         string volume = Math.Round(UnitUtils.ConvertFromInternalUnits(space.Volume, Autodesk.Revit.DB.DisplayUnitType.DUT_CUBIC_METERS), 2).ToString().Replace(",", ".");
@@ -266,9 +266,9 @@ namespace NIRAS.Revit.TTL_Exporter
 
                         if (opm)
                         {
-                            pString += NL + Util.ToL3Prop(URI, "props:identityDataName", name, e.UniqueId);
-                            pString += NL + Util.ToL3Prop(URI, "props:dimensionsArea", area, e.UniqueId);
-                            pString += NL + Util.ToL3Prop(URI, "props:dimensionsVolume", volume, e.UniqueId);
+                            pString += NL + Util.ToL3Prop(URI, "props:identityDataName", name, e.GetIFCGUID());
+                            pString += NL + Util.ToL3Prop(URI, "props:dimensionsArea", area, e.GetIFCGUID());
+                            pString += NL + Util.ToL3Prop(URI, "props:dimensionsVolume", volume, e.GetIFCGUID());
                         }
                         else
                         {
@@ -285,7 +285,7 @@ namespace NIRAS.Revit.TTL_Exporter
                         tString +=
                             NL + $"{URI}" +
                             NLT + "a bot:Space ;" +
-                            NLT + $"rvt:guid \"{room.UniqueId}\" .";
+                            NLT + $"rvt:guid \"{room.GetIFCGUID()}\" .";
 
                         string area = Math.Round(UnitUtils.ConvertFromInternalUnits(room.Area, Autodesk.Revit.DB.DisplayUnitType.DUT_SQUARE_METERS), 2).ToString().Replace(",", ".");
                         string volume = Math.Round(UnitUtils.ConvertFromInternalUnits(room.Volume, Autodesk.Revit.DB.DisplayUnitType.DUT_CUBIC_METERS), 2).ToString().Replace(",", ".");
@@ -312,10 +312,10 @@ namespace NIRAS.Revit.TTL_Exporter
 
                         if (opm)
                         {
-                            pString += NL + Util.ToL3Prop(URI, "props:identityDataNumber", number, e.UniqueId);
-                            pString += NL + Util.ToL3Prop(URI, "props:identityDataName", name, e.UniqueId);
-                            pString += NL + Util.ToL3Prop(URI, "props:dimensionsArea", area, e.UniqueId);
-                            pString += NL + Util.ToL3Prop(URI, "props:dimensionsVolume", volume, e.UniqueId);
+                            pString += NL + Util.ToL3Prop(URI, "props:identityDataNumber", number, e.GetIFCGUID());
+                            pString += NL + Util.ToL3Prop(URI, "props:identityDataName", name, e.GetIFCGUID());
+                            pString += NL + Util.ToL3Prop(URI, "props:dimensionsArea", area, e.GetIFCGUID());
+                            pString += NL + Util.ToL3Prop(URI, "props:dimensionsVolume", volume, e.GetIFCGUID());
                         }
                         else
                         {
