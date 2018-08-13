@@ -39,8 +39,9 @@ namespace NIRAS.Revit.TTL_Exporter
             string elType = cat.ToLower();   // Make lower case
             elType = elType.Remove(cat.Length - 1); // Singularize
 
-            //string guid = Host + "/" + ProNum + "/" + e.Category.Name + "/" + e.UniqueId;
-            string uri = $"{Host}/{ProNum}/{elType}_{ e.UniqueId }";
+            string guid = System.Uri.EscapeDataString(e.GetIFCGUID());
+            string uri = $"{Host}/{ProNum}/{elType}_{ guid }";
+            //string uri = $"{Host}/{ProNum}/{elType}_{ e.UniqueId }";
 
             uri = uri.Replace(" ", "_");
 
