@@ -30,7 +30,7 @@ namespace NIRAS.Revit.TTL_Exporter
             elType = elType.Remove(cat.Length - 1); // Singularize
 
             //string guid = Host + "/" + ProNum + "/" + e.Category.Name + "/" + e.UniqueId;
-            string uri = $"{Host}/{ProNum}/{elType}_{ e.UniqueId }";
+            string uri = $"{Host}{ProNum}/{elType}_{ e.UniqueId }";
             uri = uri.Replace(" ", "_");
 
             return uri;
@@ -54,9 +54,9 @@ namespace NIRAS.Revit.TTL_Exporter
             return $"{foi}\n" +
                 $"\t{property} {propURI} .\n" +
                 $"{propURI}\n" +
-                $"\tseas:evaluation {stateURI} .\n" +
+                $"\topm:hasPropertyState {stateURI} .\n" +
                 $"{stateURI}\n" +
-                $"\ta opm:CurrentState ;\n" +
+                $"\ta opm:CurrentPropertyState ;\n" +
                 $"\tschema:value {value} .\n";
         }
 
