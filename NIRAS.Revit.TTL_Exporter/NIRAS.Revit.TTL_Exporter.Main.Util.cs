@@ -16,6 +16,7 @@ using Autodesk.Revit.DB.Electrical;
 using Autodesk.Revit.DB.Plumbing;
 using System.Windows.Forms;
 using Autodesk.Revit.DB.Architecture;
+using Autodesk.Revit.DB.IFC;
 
 namespace NIRAS.Revit.TTL_Exporter
 {
@@ -30,7 +31,8 @@ namespace NIRAS.Revit.TTL_Exporter
             elType = elType.Remove(cat.Length - 1); // Singularize
 
             //string guid = Host + "/" + ProNum + "/" + e.Category.Name + "/" + e.UniqueId;
-            string uri = $"{Host}{ProNum}/{elType}_{ e.UniqueId }";
+            string uri = $"{Host}/{ProNum}/{elType}_{ e.GetIFCGUID() }";
+
             uri = uri.Replace(" ", "_");
 
             return uri;
@@ -62,5 +64,27 @@ namespace NIRAS.Revit.TTL_Exporter
 
 
 
+    }
+
+    static class Extensions
+    {
+        /// <summary>
+        /// Get IFC GUID for element
+        /// </summary>
+        /// <param name="e">Revit Element</param>
+        /// <returns>String IFCGUID</returns>
+        public static string GetIFCGUID(this Element e)
+        {
+            // generate IFC GUID using IFC API
+            string ifcid = ExporterIFCUtils.CreateAlternateGUID(e);
+
+            // fallback to uniqueId in case of error
+            if (ifcid == null || ifcid == string.Empty)
+            {
+                return e.UniqueId;
+            }
+
+            return ifcid;
+        }
     }
 }

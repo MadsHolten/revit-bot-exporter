@@ -36,6 +36,10 @@
       <HintPath>..\..\..\..\..\..\Program Files\Autodesk\Revit 2018\RevitAPI.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="RevitAPIIFC">
+      <HintPath>..\..\..\..\..\..\Program Files\Autodesk\Revit 2018\RevitAPIIFC.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="RevitAPIUI">
       <HintPath>..\..\..\..\..\..\Program Files\Autodesk\Revit 2018\RevitAPIUI.dll</HintPath>
       <Private>False</Private>
