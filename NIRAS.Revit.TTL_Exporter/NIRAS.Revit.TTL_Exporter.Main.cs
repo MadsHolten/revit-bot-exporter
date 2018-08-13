@@ -43,7 +43,7 @@ namespace NIRAS.Revit.TTL_Exporter
 
             SaveFileDialog savefile = new SaveFileDialog();
             // set a default file name
-            savefile.FileName = doc.Title + ".ttl";
+            savefile.FileName = doc.Title.Split(".rvt".ToCharArray())[0] + ".ttl";
             // set filters - this can be done in properties as well
             savefile.Filter = "Text files (*.ttl)|*.ttl|All files (*.*)|*.*";
 
@@ -59,7 +59,12 @@ namespace NIRAS.Revit.TTL_Exporter
                        .OfCategory(BuiltInCategory.OST_ProjectInformation)
                        .FirstElement() as ProjectInfo).LookupParameter("Host").AsString();
 
-                String Namespace = $"{Host}/{ProNum}/";
+                if (!Host.EndsWith("/"))
+                {
+                    Host += "/";
+                }
+
+                String Namespace = $"{Host}{ProNum}/";
 
                 string NL = Environment.NewLine;
                 string NLT = Environment.NewLine + "\t";
@@ -201,7 +206,7 @@ namespace NIRAS.Revit.TTL_Exporter
                     ElementDict.Add(e.Id, URI);
 
                     tString +=
-                        NL + $"<{URI}>" +
+                        NL + URI +
                         NLT + "a bot:Storey ;" +
                         NLT + "rvt:guid \"" + e.GetIFCGUID() + "\" .";
 
@@ -239,7 +244,15 @@ namespace NIRAS.Revit.TTL_Exporter
 
                         tString +=
                             NL + $"{URI}" +
-                            NLT + "a bot:Space ;" +
+                            NLT + "a bot:Space ";
+
+                        string typeURI = space.LookupParameter("SpaceTypeURI").AsString();
+                        if (typeURI != null)
+                        {
+                            tString += $", <{typeURI}> ";
+                        }
+
+                        tString += ";" +
                             NLT + $"rvt:guid \"{space.GetIFCGUID()}\" .";
 
                         string area = Math.Round(UnitUtils.ConvertFromInternalUnits(space.Area, Autodesk.Revit.DB.DisplayUnitType.DUT_SQUARE_METERS), 2).ToString().Replace(",", ".");
@@ -257,12 +270,6 @@ namespace NIRAS.Revit.TTL_Exporter
                         }
 
                         string name = $"\"{e.Name}\"";
-
-                        if (space.LookupParameter("SpaceTypeURI") != null)
-                        {
-                            string typeURI = space.LookupParameter("SpaceTypeURI").AsString();
-                            pString += NL + URI + NLT + $"ex:hasRequirementModel <{typeURI}> .";
-                        }
 
                         if (opm)
                         {
@@ -284,7 +291,14 @@ namespace NIRAS.Revit.TTL_Exporter
 
                         tString +=
                             NL + $"{URI}" +
-                            NLT + "a bot:Space ;" +
+                            NLT + "a bot:Space ";
+
+                        string typeURI = room.LookupParameter("SpaceTypeURI").AsString();
+                        if (typeURI != null)
+                        {
+                            tString += $", <{typeURI}> ";
+                        }
+                        tString += ";" +
                             NLT + $"rvt:guid \"{room.GetIFCGUID()}\" .";
 
                         string area = Math.Round(UnitUtils.ConvertFromInternalUnits(room.Area, Autodesk.Revit.DB.DisplayUnitType.DUT_SQUARE_METERS), 2).ToString().Replace(",", ".");
@@ -303,12 +317,6 @@ namespace NIRAS.Revit.TTL_Exporter
 
                         string name = $"\"{room.Name}\"";
                         string number = $"\"{room.Number}\"";
-
-                        if(room.LookupParameter("SpaceTypeURI") != null)
-                        {
-                            string typeURI = room.LookupParameter("SpaceTypeURI").AsString();
-                            pString += NL + URI + NLT + $"ex:hasRequirementModel <{typeURI}> .";
-                        }
 
                         if (opm)
                         {
@@ -344,7 +352,7 @@ namespace NIRAS.Revit.TTL_Exporter
                         FamilyInstance FamIns = e as FamilyInstance;
 
                         tString +=
-                                NL + $"{ElementDict[FamIns.Host.Id]} bot:hostsElement {ElementDict[e.Id]} .";
+                                NL + $"{ElementDict[FamIns.Host.Id]} bot:hasSubElement {ElementDict[e.Id]} .";
                     }
                     catch { }
                 }
