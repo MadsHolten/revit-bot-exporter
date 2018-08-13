@@ -57,6 +57,9 @@ namespace NIRAS.Revit.TTL_Exporter
 
         public static string ToL3Prop(string foi, string property, string value, string guid)
         {
+            // Escape illegal characters in guid
+            guid = System.Uri.EscapeDataString(guid);
+
             // Get property without prefix
             string prop = Regex.Matches(property, @"([^:]+)$")[0].Value;
 

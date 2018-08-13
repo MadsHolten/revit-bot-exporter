@@ -89,6 +89,7 @@ namespace NIRAS.Revit.TTL_Exporter
                 String cString =
                          "@prefix props:\t<https://w3id.org/props#> ." +
                     NL + "@prefix rdfs:\t<http://www.w3.org/2000/01/rdf-schema#> ." +
+                    NL + "@prefix bot:\t<https://w3id.org/bot#> ." +
                     NL + "@prefix xsd:\t<http://www.w3.org/2001/XMLSchema#> ." +
                     NL + "@prefix ex:\t\t<https://example.org/> ." +
                     NL + $"@prefix inst:\t<{Namespace}> .";
