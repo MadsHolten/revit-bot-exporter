@@ -23,6 +23,15 @@ namespace NIRAS.Revit.TTL_Exporter
     class Util
     {
 
+        public static string TypeNameToId(string Name)
+        {
+            string id = Name.Replace("(", "").Replace(")", "").Replace(" ", "_");
+
+            id = System.Uri.EscapeDataString(id);
+
+            return id;
+        }
+
         public static string CreateURI(Element e, string Host,string ProNum)
         {
 
@@ -31,7 +40,7 @@ namespace NIRAS.Revit.TTL_Exporter
             elType = elType.Remove(cat.Length - 1); // Singularize
 
             //string guid = Host + "/" + ProNum + "/" + e.Category.Name + "/" + e.UniqueId;
-            string uri = $"{Host}/{ProNum}/{elType}_{ e.GetIFCGUID() }";
+            string uri = $"{Host}/{ProNum}/{elType}_{ e.UniqueId }";
 
             uri = uri.Replace(" ", "_");
 

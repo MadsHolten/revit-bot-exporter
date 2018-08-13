@@ -71,6 +71,7 @@ namespace NIRAS.Revit.TTL_Exporter
 
                 // tString : Topology string
                 // pString : Property string
+                // cString : Class string
 
                 String tString =
                          "@prefix bot:\t<https://w3id.org/bot#> ." +
@@ -79,6 +80,13 @@ namespace NIRAS.Revit.TTL_Exporter
                     NL + $"@prefix inst:\t<{Namespace}> .";
 
                 String pString = 
+                         "@prefix props:\t<https://w3id.org/props#> ." +
+                    NL + "@prefix rdfs:\t<http://www.w3.org/2000/01/rdf-schema#> ." +
+                    NL + "@prefix xsd:\t<http://www.w3.org/2001/XMLSchema#> ." +
+                    NL + "@prefix ex:\t\t<https://example.org/> ." +
+                    NL + $"@prefix inst:\t<{Namespace}> .";
+
+                String cString =
                          "@prefix props:\t<https://w3id.org/props#> ." +
                     NL + "@prefix rdfs:\t<http://www.w3.org/2000/01/rdf-schema#> ." +
                     NL + "@prefix xsd:\t<http://www.w3.org/2001/XMLSchema#> ." +
@@ -110,12 +118,16 @@ namespace NIRAS.Revit.TTL_Exporter
 
                     string URI = Parameters.GenerateURIifNotExist(doc, e).Replace(Namespace, "inst:");
 
+                    String wallType = doc.GetElement(wall.GetTypeId()).Name.ToString();
+                    string typeURI = "inst:" + Util.TypeNameToId(wallType);
+
                     ElementDict.Add(e.Id, URI);
 
                     // Append classes to 
                     tString +=
                         NL + $"{URI}" +
-                        NLT + "a bot:Element ;" +
+                        NLT + $"a bot:Element , {typeURI} ;" +
+                        NLT + $"rvt:id \"{e.Id}\" ;" +
                         NLT + $"rvt:guid \"{e.GetIFCGUID()}\" .";
 
                     string width = Math.Round(UnitUtils.ConvertFromInternalUnits(wall.Width, Autodesk.Revit.DB.DisplayUnitType.DUT_MILLIMETERS), 2).ToString().Replace(",", ".");
@@ -152,9 +164,30 @@ namespace NIRAS.Revit.TTL_Exporter
 
                 #endregion
 
+                #region WallTypes
+
+                List<Element> wallTypes = new FilteredElementCollector(doc)
+                    .OfClass(typeof(WallType)).ToElements().ToList();
+
+                cString += NL + NL + "# WALLTYPES";
+
+                foreach (Element e in wallTypes)
+                {
+                    WallType wt = e as WallType;
+
+                    string URI = "inst:" + Util.TypeNameToId(wt.Name);
+
+                    cString +=
+                        NL + URI +
+                        NLT + "rdfs:subClassOf bot:Element ;" +
+                        NLT + $"rdfs:label \"{wt.Name}\" .";
+                }
+
+                #endregion
+
                 #region Windows and Doors
 
-                
+
                 IList<Element> WinDoor = new FilteredElementCollector(doc)
                     .WhereElementIsNotElementType().WherePasses(new LogicalOrFilter(new List<ElementFilter>
                         {                            
@@ -174,6 +207,7 @@ namespace NIRAS.Revit.TTL_Exporter
                     tString +=
                         NL + $"{URI}" +
                         NLT + "a bot:Element ;" +
+                        NLT + $"rvt:id \"{e.Id}\" ;" +
                         NLT + "rvt:guid \"" + e.GetIFCGUID() + "\" .";
 
                     string name = $"\"{e.Name}\"";
@@ -208,6 +242,7 @@ namespace NIRAS.Revit.TTL_Exporter
                     tString +=
                         NL + URI +
                         NLT + "a bot:Storey ;" +
+                        NLT + $"rvt:id \"{e.Id}\" ;" +
                         NLT + "rvt:guid \"" + e.GetIFCGUID() + "\" .";
 
                     string name = $"\"{e.Name}\"";
@@ -253,6 +288,7 @@ namespace NIRAS.Revit.TTL_Exporter
                         }
 
                         tString += ";" +
+                            NLT + $"rvt:id \"{space.Id}\" ;" +
                             NLT + $"rvt:guid \"{space.GetIFCGUID()}\" .";
 
                         string area = Math.Round(UnitUtils.ConvertFromInternalUnits(space.Area, Autodesk.Revit.DB.DisplayUnitType.DUT_SQUARE_METERS), 2).ToString().Replace(",", ".");
@@ -299,6 +335,7 @@ namespace NIRAS.Revit.TTL_Exporter
                             tString += $", <{typeURI}> ";
                         }
                         tString += ";" +
+                            NLT + $"rvt:id \"{room.Id}\" ;" +
                             NLT + $"rvt:guid \"{room.GetIFCGUID()}\" .";
 
                         string area = Math.Round(UnitUtils.ConvertFromInternalUnits(room.Area, Autodesk.Revit.DB.DisplayUnitType.DUT_SQUARE_METERS), 2).ToString().Replace(",", ".");
@@ -410,6 +447,12 @@ namespace NIRAS.Revit.TTL_Exporter
                 new StreamWriter(savefile.FileName.Replace(".ttl", "_props.ttl")))
                 {
                     writer.Write(pString);
+                }
+
+                using (StreamWriter writer =
+                new StreamWriter(savefile.FileName.Replace(".ttl", "_classes.ttl")))
+                {
+                    writer.Write(cString);
                 }
 
             }
