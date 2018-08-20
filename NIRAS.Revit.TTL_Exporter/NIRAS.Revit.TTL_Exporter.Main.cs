@@ -29,7 +29,8 @@ namespace NIRAS.Revit.TTL_Exporter
 
             // SETTINGS
             Boolean opm = true;
-            Boolean cdt = false;
+            Boolean cdt = true;
+            Boolean geometryExport = true;
 
             UIApplication uiapp = commandData.Application;
             UIDocument uidoc = uiapp.ActiveUIDocument;
@@ -72,6 +73,8 @@ namespace NIRAS.Revit.TTL_Exporter
                 // tString : Topology string
                 // pString : Property string
                 // cString : Class string
+                // gString : Geometry string
+                // logString: Test string
 
                 String tString =
                          "@prefix bot:\t<https://w3id.org/bot#> ." +
@@ -94,6 +97,12 @@ namespace NIRAS.Revit.TTL_Exporter
                     NL + "@prefix ex:\t\t<https://example.org/> ." +
                     NL + $"@prefix inst:\t<{Namespace}> .";
 
+                String gString =
+                        "@prefix bot:\t<https://w3id.org/bot#> ." +
+                    NL + $"@prefix inst:\t<{Namespace}> .";
+
+                String testString = "";
+
                 if (cdt) pString += NL + "@prefix cdt:\t<http://w3id.org/lindt/custom_datatypes#> .";
 
                 if (opm) pString += NL + "@prefix opm:\t<https://w3id.org/opm#> ." +
@@ -111,6 +120,7 @@ namespace NIRAS.Revit.TTL_Exporter
 
                 tString += NL + NL + "# WALLS";
                 pString += NL + NL + "# WALLS";
+                gString += NL + NL + "# WALLS";
 
                 foreach (Element e in walls)
                 {
@@ -160,7 +170,14 @@ namespace NIRAS.Revit.TTL_Exporter
                         pString += NL + Util.ToL1Prop(URI, "props:dimensionsWidth", width);
                         pString += NL + Util.ToL1Prop(URI, "props:dimensionsLength", length);
                     }
-                        
+
+                    // Geometry export
+                    if (geometryExport)
+                    {
+                        testString += Util.GetFacesAndEdges(wall) + NL;
+                        gString += NL + $"{URI} bot:hasSimple3DModel \"{Util.GetFacesAndEdges(wall)}\" .";
+                    }
+
                 }
 
                 #endregion
@@ -268,6 +285,7 @@ namespace NIRAS.Revit.TTL_Exporter
 
                 tString += NL + NL + "### SPACES ###";
                 pString += NL + NL + "### SPACES ###";
+                gString += NL + NL + "### SPACES ###";
 
                 foreach (Element e in spaces)
                 {
@@ -320,6 +338,13 @@ namespace NIRAS.Revit.TTL_Exporter
                             pString += NL + Util.ToL1Prop(URI, "props:dimensionsArea", area);
                             pString += NL + Util.ToL1Prop(URI, "props:dimensionsVolume", volume);
                         }
+
+                        // Geometry export
+                        if (geometryExport)
+                        {
+                            testString += Util.GetFacesAndEdges(space) + NL;
+                            gString += NL + $"{URI} bot:hasSimple3DModel \"{Util.GetFacesAndEdges(space)}\" .";
+                        }
                     }
 
                     if (e.Category.Name == "Rooms")
@@ -369,6 +394,13 @@ namespace NIRAS.Revit.TTL_Exporter
                             pString += NL + Util.ToL1Prop(URI, "props:identityDataName", name);
                             pString += NL + Util.ToL1Prop(URI, "props:dimensionsArea", area);
                             pString += NL + Util.ToL1Prop(URI, "props:dimensionsVolume", volume);
+                        }
+
+                        // Geometry export
+                        if (geometryExport)
+                        {
+                            testString += Util.GetFacesAndEdges(room) + NL;
+                            gString += NL + $"{URI} bot:hasSimple3DModel \"{Util.GetFacesAndEdges(room)}\" .";
                         }
 
                     }
@@ -454,6 +486,18 @@ namespace NIRAS.Revit.TTL_Exporter
                 new StreamWriter(savefile.FileName.Replace(".ttl", "_classes.ttl")))
                 {
                     writer.Write(cString);
+                }
+
+                using (StreamWriter writer =
+                new StreamWriter(savefile.FileName.Replace(".ttl", "_geometry3d.ttl")))
+                {
+                    writer.Write(gString);
+                }
+
+                using (StreamWriter writer =
+                new StreamWriter(savefile.FileName.Replace(".ttl", "_log.txt")))
+                {
+                    writer.Write(testString);
                 }
 
             }

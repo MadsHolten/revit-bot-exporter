@@ -140,8 +140,6 @@ namespace NIRAS.Revit.TTL_Exporter
 
         public static string GenerateURIifNotExist(Document doc, Element e)
         {
-            Transaction tx = new Transaction(doc);
-
             string uri = null;
 
             String ProNum = (new FilteredElementCollector(doc)
@@ -155,6 +153,7 @@ namespace NIRAS.Revit.TTL_Exporter
             if (e.LookupParameter("URI") != null && String.IsNullOrEmpty(e.LookupParameter("URI").AsString()))
             {
                 // Begin transaction
+                Transaction tx = new Transaction(doc);
                 tx.Start("Generate single URI");
 
                 try
@@ -172,8 +171,6 @@ namespace NIRAS.Revit.TTL_Exporter
             {
                 uri = e.LookupParameter("URI").AsString();
             }
-
-
 
             return uri;
 
